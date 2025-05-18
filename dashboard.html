@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Dashboard</title>
+    <!-- Load Supabase JS before any other scripts -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Lato', sans-serif;
+            background-color: #FAF8F6;
+        }
+        .heading { 
+            font-family: 'Playfair Display', serif; 
+        }
+        #recentActivity::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #recentActivity::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        #recentActivity::-webkit-scrollbar-thumb {
+            background: #5a3e30;
+            border-radius: 3px;
+        }
+
+        #recentActivity::-webkit-scrollbar-thumb:hover {
+            background: #4a3020;
+        }
+
+        /* Name editor styles */
+        .name-editor {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(90, 62, 48, 0.2);
+            z-index: 1000;
+            transform: translateY(calc(100% + 20px));
+            transition: transform 0.3s ease;
+            min-width: 300px;
+        }
+
+        .name-editor.expanded {
+            transform: translateY(0);
+        }
+
+        .name-editor-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #5a3e30;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 2px 10px rgba(90, 62, 48, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .name-editor-toggle:hover {
+            background: #4a3020;
+        }
+
+        .name-editor-toggle.expanded {
+            transform: rotate(45deg);
+        }
+
+        .name-editor-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .name-editor-input {
+            padding: 0.5rem;
+            border: 1px solid #B4A193;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        .name-editor-save {
+            padding: 0.5rem 1rem;
+            background: #5a3e30;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .name-editor-save:hover {
+            background: #4a3020;
+        }
+
+        /* Add styles for visitor numbers */
+        .visitor-number {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        /* Different colors for different visitors */
+        .visitor-1 { background-color: #FFB7C5; color: #5a3e30; }
+        .visitor-2 { background-color: #98FB98; color: #5a3e30; }
+        .visitor-3 { background-color: #87CEEB; color: #5a3e30; }
+        .visitor-4 { background-color: #DDA0DD; color: #5a3e30; }
+        .visitor-5 { background-color: #F0E68C; color: #5a3e30; }
+        /* Add more colors as needed */
+
+        .activity-message {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .activity-location {
+            color: #687066;
+            font-style: italic;
+        }
+
+        .project-name {
+            font-weight: 700;
+            color: #5a3e30;
+            border-bottom: 2px solid #5a3e30;
+            padding-bottom: 1px;
+        }
+
+        .feedback-stats {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .feedback-count {
+            font-weight: 500;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .visitor-summary {
+            margin-top: 2rem;
+        }
+
+        .visitor-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(90, 62, 48, 0.1);
+        }
+
+        .visitor-activity {
+            margin-left: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .activity-type {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-right: 1rem;
+        }
+
+        .project-list {
+            margin-left: 1.5rem;
+            color: #687066;
+            font-style: italic;
+        }
+
+        .feedback-play-again-btn.visible {
+            display: block;
+        }
+
+        /* Add styles for visitor name management */
+        .visitor-name {
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0 2px;
+        }
+
+        /* Name editor styles */
+        .name-editor {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(90, 62, 48, 0.2);
+            z-index: 1000;
+            transform: translateY(calc(100% + 20px));
+            transition: transform 0.3s ease;
+        }
+
+        .name-editor.expanded {
+            transform: translateY(0);
+        }
+
+        .name-editor-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #5a3e30;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            box-shadow: 0 2px 10px rgba(90, 62, 48, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .name-editor-toggle:hover {
+            background: #4a3020;
+        }
+
+        .name-editor-toggle.expanded {
+            transform: rotate(45deg);
+        }
+
+        .name-editor-form {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .name-editor-input {
+            padding: 0.5rem;
+            border: 1px solid #B4A193;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            min-width: 120px;
+        }
+
+        .name-editor-save {
+            padding: 0.5rem 1rem;
+            background: #5a3e30;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            white-space: nowrap;
+        }
+
+        .name-editor-save:hover {
+            background: #4a3020;
+        }
+
+        /* Add styles for login overlay */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(90, 62, 48, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-container h2 {
+            margin-bottom: 1.5rem;
+            color: #5a3e30;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #B4A193;
+            border-radius: 4px;
+        }
+
+        .login-form button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #5a3e30;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .login-form button:hover {
+            background: #4a3020;
+        }
+
+        /* Hide main content when not authenticated */
+        .main-content {
+            display: none;
+        }
+
+        .main-content.authenticated {
+            display: block;
+        }
+    </style>
+</head>
+<body class="p-8">
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-container">
+            <h2 class="text-2xl font-bold">Dashboard Login</h2>
+            <form id="loginForm" class="login-form">
+                <input type="email" id="loginEmail" placeholder="Email" required>
+                <input type="password" id="loginPassword" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Content -->
+    <div id="mainContent" class="main-content max-w-6xl mx-auto">
+        <h1 class="heading text-4xl mb-8 text-[#5a3e30]">Portfolio Dashboard</h1>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-bold mb-2">Total Flowers 🌸</h3>
+                <p id="flowerCount" class="text-3xl font-bold text-[#5a3e30]">Loading...</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-bold mb-2">Total Feedback 🔎</h3>
+                <p id="feedbackCount" class="text-3xl font-bold text-[#5a3e30]">Loading...</p>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h3 class="text-lg font-bold mb-2">Messages 💌</h3>
+                <p id="messageCount" class="text-3xl font-bold text-[#5a3e30]">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Recent Activity and Project Feedback -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Project Feedback - Left Side -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="heading text-2xl mb-6">Project Feedback</h2>
+                <div id="projectFeedback" class="space-y-4 h-[300px]">
+                    <p class="text-gray-500">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Recent Activity - Right Side -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="heading text-2xl mb-6">Recent Activity</h2>
+                <div id="recentActivity" class="space-y-4 h-[300px] overflow-y-auto pr-2">
+                <p class="text-gray-500">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Visitor Summary Section -->
+        <div class="visitor-summary">
+            <h2 class="heading text-2xl mb-6">Visitor Summary</h2>
+            <div id="visitorSummary" class="space-y-4">
+                <p class="text-gray-500">Loading...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add name editor UI -->
+    <button class="name-editor-toggle" id="nameEditorToggle">
+        <i class="ri-edit-line ri-lg"></i>
+    </button>
+    <div class="name-editor" id="nameEditor">
+        <h3 class="text-lg font-bold mb-3">Edit Visitor Names</h3>
+        <form id="nameEditorForm" class="name-editor-form">
+            <div class="flex flex-col gap-2">
+                <label for="visitorSelect" class="text-sm text-primary/70">Select Visitor</label>
+                <select id="visitorSelect" class="name-editor-input">
+                    <option value="">Loading visitors...</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-2">
+                <label for="nameInput" class="text-sm text-primary/70">New Name</label>
+                <input type="text" id="nameInput" class="name-editor-input" placeholder="Enter custom name">
+            </div>
+            <button type="submit" class="name-editor-save mt-2">Save Name</button>
+        </form>
+    </div>
+
+    <script>
+        // Initialize Supabase client
+        const supabaseUrl = 'https://hccoowqiswclssmtfbyw.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjY29vd3Fpc3djbHNzbXRmYnl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc1Njg1NDQsImV4cCI6MjA2MzE0NDU0NH0.RB-9aB6FwyCUMg98Y6N3rx5w5Te8IvwrwxOx92lpKP0';
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Check if user is already logged in
+        async function checkAuth() {
+            const { data: { user }, error } = await supabase.auth.getUser();
+            if (user) {
+                showDashboard();
+            }
+        }
+
+        // Handle login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const { data: { user }, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+                if (error) throw error;
+                
+                if (user) {
+                    showDashboard();
+                }
+            } catch (error) {
+                alert('Login failed: ' + error.message);
+            }
+        });
+
+        // Show dashboard after successful login
+        function showDashboard() {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainContent').classList.add('authenticated');
+        }
+
+        // Check auth status when page loads
+        checkAuth();
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize loading states
+            const loadingElements = {
+                flowerCount: document.getElementById('flowerCount'),
+                feedbackCount: document.getElementById('feedbackCount'),
+                messageCount: document.getElementById('messageCount'),
+                projectFeedback: document.getElementById('projectFeedback'),
+                recentActivity: document.getElementById('recentActivity'),
+                visitorSummary: document.getElementById('visitorSummary')
+            };
+
+            // Show loading state
+            Object.values(loadingElements).forEach(element => {
+                if (element) {
+                    element.innerHTML = '<p class="text-gray-500">Loading...</p>';
+                }
+            });
+
+            // Add state for tracking previous counts
+            let previousCounts = {
+                flowers: 0,
+                feedback: 0,
+                messages: 0
+            };
+
+            // Try to get previous counts from localStorage
+            try {
+                const savedCounts = localStorage.getItem('previousCounts');
+                if (savedCounts) {
+                    previousCounts = JSON.parse(savedCounts);
+                }
+            } catch (error) {
+                console.error('Error loading previous counts:', error);
+            }
+
+            // Get last activity timestamp from localStorage or set default
+            let lastActivityTime = localStorage.getItem('lastActivityTime') || new Date(0).toISOString();
+
+            try {
+                // Get all the data we need
+                const [
+                    { data: flowers, error: flowerError },
+                    { data: feedback, error: feedbackError },
+                    { data: messageCount, error: messageError },
+                    { data: allMessages, error: visitorMessageError }
+                ] = await Promise.all([
+                    supabase.from('flowers').select('*, visitors(*)').order('created_at', { ascending: false }),
+                    supabase.from('feedback').select('*, visitors(*)').order('created_at', { ascending: false }),
+                    supabase.from('messages').select('count').single(),
+                    supabase.from('messages').select('visitor_id, created_at').order('created_at', { ascending: false })
+                ]);
+
+                // Handle any errors
+                if (flowerError) throw flowerError;
+                if (feedbackError) throw feedbackError;
+                if (messageError) throw messageError;
+                if (visitorMessageError) throw visitorMessageError;
+
+                // Update stats with green indicators for new items
+                const currentCounts = {
+                    flowers: flowers?.length || 0,
+                    feedback: feedback?.length || 0,
+                    messages: messageCount?.count || 0
+                };
+
+                // Update the stats displays
+                if (loadingElements.flowerCount) {
+                    const flowerDiff = currentCounts.flowers - (previousCounts.flowers || 0);
+                    loadingElements.flowerCount.innerHTML = `
+                        ${currentCounts.flowers}
+                        ${flowerDiff > 0 ? `<span class="text-green-500 text-sm ml-2">+${flowerDiff}</span>` : ''}
+                    `;
+                }
+
+                if (loadingElements.feedbackCount) {
+                    const feedbackDiff = currentCounts.feedback - (previousCounts.feedback || 0);
+                    loadingElements.feedbackCount.innerHTML = `
+                        ${currentCounts.feedback}
+                        ${feedbackDiff > 0 ? `<span class="text-green-500 text-sm ml-2">+${feedbackDiff}</span>` : ''}
+                    `;
+                }
+
+                if (loadingElements.messageCount) {
+                    const messageDiff = currentCounts.messages - (previousCounts.messages || 0);
+                    loadingElements.messageCount.innerHTML = `
+                        ${currentCounts.messages}
+                        ${messageDiff > 0 ? `<span class="text-green-500 text-sm ml-2">+${messageDiff}</span>` : ''}
+                    `;
+                }
+
+                // Save current counts for next comparison
+                localStorage.setItem('previousCounts', JSON.stringify(currentCounts));
+
+                // Create visitor summary map
+                const visitorSummary = new Map();
+
+                // Process flowers
+                if (flowers) {
+                    flowers.forEach(flower => {
+                        const visitorId = flower.visitors?.id;
+                        if (!visitorSummary.has(visitorId)) {
+                            visitorSummary.set(visitorId, {
+                                visitor: flower.visitors,
+                                flowers: 0,
+                                likes: new Set(),
+                                dislikes: new Set(),
+                                messages: 0
+                            });
+                        }
+                        visitorSummary.get(visitorId).flowers++;
+                    });
+                }
+
+                // Process feedback
+                if (feedback) {
+                    feedback.forEach(fb => {
+                        const visitorId = fb.visitors?.id;
+                        if (!visitorSummary.has(visitorId)) {
+                            visitorSummary.set(visitorId, {
+                                visitor: fb.visitors,
+                                flowers: 0,
+                                likes: new Set(),
+                                dislikes: new Set(),
+                                messages: 0
+                            });
+                        }
+                        const summary = visitorSummary.get(visitorId);
+                        if (fb.is_like) {
+                            summary.likes.add(fb.project);
+                        } else {
+                            summary.dislikes.add(fb.project);
+                        }
+                    });
+                }
+
+                // Process message counts
+                if (allMessages) {
+                    // Count messages per visitor
+                    const messageCounts = {};
+                    allMessages.forEach(msg => {
+                        messageCounts[msg.visitor_id] = (messageCounts[msg.visitor_id] || 0) + 1;
+                    });
+
+                    // Add message counts to visitor summary
+                    Object.entries(messageCounts).forEach(([visitorId, count]) => {
+                        if (!visitorSummary.has(visitorId)) {
+                            // Get visitor info if not already in summary
+                            const visitor = flowers?.find(f => f.visitors?.id === visitorId)?.visitors ||
+                                          feedback?.find(f => f.visitors?.id === visitorId)?.visitors;
+                            if (visitor) {
+                                visitorSummary.set(visitorId, {
+                                    visitor,
+                                    flowers: 0,
+                                    likes: new Set(),
+                                    dislikes: new Set(),
+                                    messages: 0
+                                });
+                            }
+                        }
+                        if (visitorSummary.has(visitorId)) {
+                            visitorSummary.get(visitorId).messages = count;
+                        }
+                    });
+                }
+
+                // Update project feedback
+                updateProjectFeedback(feedback);
+
+                // Update recent activity
+                const allActivities = [
+                    ...(flowers || []).map(flower => ({
+                        type: 'flower',
+                        created_at: flower.created_at,
+                        visitor: flower.visitors
+                    })),
+                    ...(feedback || []).map(fb => ({
+                        type: 'feedback',
+                        created_at: fb.created_at,
+                        project: fb.project,
+                        is_like: fb.is_like,
+                        visitor: fb.visitors
+                    })),
+                    ...(allMessages || []).map(msg => ({
+                        type: 'message',
+                        created_at: msg.created_at,
+                        visitor: flowers?.find(f => f.visitors?.id === msg.visitor_id)?.visitors ||
+                                feedback?.find(f => f.visitors?.id === msg.visitor_id)?.visitors
+                    }))
+                ];
+
+                allActivities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                const recentActivities = allActivities.slice(0, 10);
+
+                const recentActivityElement = document.getElementById('recentActivity');
+                if (recentActivityElement) {
+                    const activityHtml = recentActivities.map(activity => {
+                        const visitorName = activity.visitor?.custom_name || `Visitor ${activity.visitor?.visitor_number}`;
+                        const location = activity.visitor?.location?.city || 'Unknown location';
+                        const timeAgo = getTimeAgo(new Date(activity.created_at));
+                        const timestamp = new Date(activity.created_at).toLocaleString();
+                        const isNew = new Date(activity.created_at) > new Date(lastActivityTime);
+                        const newDot = isNew ? '<span class="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>' : '';
+                        
+                        let actionText = '';
+                        let actionEmoji = '';
+                        if (activity.type === 'flower') {
+                            actionText = 'sent a flower';
+                            actionEmoji = '🌸';
+                        } else if (activity.type === 'feedback') {
+                            actionText = `${activity.is_like ? 'liked' : 'disliked'} ${activity.project}`;
+                            actionEmoji = activity.is_like ? '👍' : '👎';
+                        } else if (activity.type === 'message') {
+                            actionText = 'sent a message';
+                            actionEmoji = '💌';
+                        }
+                        
+                        const isCurrentVisitor = activity.visitor?.custom_name === 'Myself';
+                        const visitorClass = isCurrentVisitor ? 'bg-[#FFB7C5] px-2 py-1 rounded' : '';
+                        
+                        return `
+                            <div class="mb-6">
+                                <div class="text-sm text-gray-500 italic mb-1">
+                                    ${timeAgo} • ${timestamp}
+                                </div>
+                                <div class="activity-message">
+                                    ${newDot}<span class="${visitorClass}">${visitorName}</span> 
+                                    from <span class="font-bold italic">${location}</span> 
+                                    ${actionText} ${actionEmoji}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    recentActivityElement.innerHTML = activityHtml || '<p class="text-gray-500">No recent activity</p>';
+                }
+
+                // Save current timestamp for next comparison
+                localStorage.setItem('lastActivityTime', new Date().toISOString());
+
+                // Update visitor summary
+                updateVisitorSummary(visitorSummary);
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                // Show error message in each section
+                const sections = ['flowerCount', 'feedbackCount', 'messageCount', 'projectFeedback', 'recentActivity', 'visitorSummary'];
+                sections.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<p class="text-red-500">Error loading data. Please refresh the page.</p>';
+                    }
+                });
+            }
+        });
+
+        // Helper function to update project feedback
+        function updateProjectFeedback(feedback) {
+            const projectFeedback = document.getElementById('projectFeedback');
+            if (!projectFeedback) return;
+
+            if (feedback && feedback.length > 0) {
+                const projectStats = {};
+                feedback.forEach(fb => {
+                    if (!projectStats[fb.project]) {
+                        projectStats[fb.project] = { likes: 0, dislikes: 0, total: 0 };
+                    }
+                    if (fb.is_like) {
+                        projectStats[fb.project].likes++;
+                    } else {
+                        projectStats[fb.project].dislikes++;
+                    }
+                    projectStats[fb.project].total++;
+                });
+
+                const projectHtml = Object.entries(projectStats)
+                    .map(([project, stats]) => `
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-bold">${project}</h3>
+                                <span class="text-sm text-gray-600">${stats.total} responses</span>
+                            </div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span>👍 ${stats.likes}</span>
+                                <span style="color: #DC2626">👎 ${stats.dislikes}</span>
+                            </div>
+                            <div class="w-full h-2 rounded-full overflow-hidden" style="background: #DC2626">
+                                <div class="h-full bg-green-500" style="width: ${(stats.likes / stats.total) * 100}%"></div>
+                            </div>
+                        </div>
+                    `)
+                    .join('');
+
+                projectFeedback.innerHTML = projectHtml;
+            } else {
+                projectFeedback.innerHTML = '<p class="text-gray-500">No feedback yet</p>';
+            }
+        }
+
+        // Helper function to calculate time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            const intervals = {
+                year: 31536000,
+                month: 2592000,
+                week: 604800,
+                day: 86400,
+                hour: 3600,
+                minute: 60
+            };
+            
+            for (const [unit, seconds] of Object.entries(intervals)) {
+                const interval = Math.floor(diffInSeconds / seconds);
+                if (interval >= 1) {
+                    return interval === 1 ? `${interval} ${unit} ago` : `${interval} ${unit}s ago`;
+                }
+            }
+            
+            return 'just now';
+        }
+
+        // Helper function to get visitor display name
+        async function getVisitorDisplay(visitor) {
+            if (!visitor) return 'Unknown visitor';
+            return visitor.custom_name || `Visitor ${visitor.visitor_number}`;
+        }
+
+        // Helper function to get location display
+        function getLocationDisplay(visitor, showCountry = false) {
+            if (!visitor?.location) return 'Unknown location';
+            const city = visitor.location.city || 'Unknown city';
+            const country = visitor.location.country || 'Unknown country';
+            return showCountry ? `${city}, ${country}` : city;
+        }
+
+        // Helper function to update visitor summary
+        async function updateVisitorSummary(visitorSummary) {
+            const visitorSummaryElement = document.getElementById('visitorSummary');
+            if (!visitorSummaryElement) return;
+
+            try {
+                const summaryHtml = Array.from(visitorSummary.entries()).map(([visitorId, summary]) => {
+                    const visitorName = summary.visitor?.custom_name || `Visitor ${summary.visitor?.visitor_number}`;
+                    const location = summary.visitor?.location;
+                    const locationDisplay = location ? `${location.city}, ${location.country}` : 'Unknown location';
+
+                    return `
+                        <div class="visitor-card mb-4">
+                            <div class="flex items-center gap-2 mb-4">
+                                <span class="visitor-name ${getVisitorColorClass(summary.visitor)}">${visitorName}</span>
+                                <span class="activity-location">${locationDisplay}</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="stat-pill bg-[#FFF5F5] px-4 py-2 rounded-full flex items-center gap-2">
+                                    <span class="text-lg">🌸</span>
+                                    <span>${summary.flowers || 0}</span>
+                                </div>
+                                <div class="stat-pill bg-[#F0FFF4] px-4 py-2 rounded-full flex items-center gap-2">
+                                    <span class="text-lg">👍</span>
+                                    <span>${summary.likes.size || 0}</span>
+                                    ${summary.likes.size > 0 ? 
+                                        `<span class="text-sm text-gray-500 ml-1">(${Array.from(summary.likes).join(', ')})</span>` 
+                                        : ''
+                                    }
+                                </div>
+                                <div class="stat-pill bg-[#FFF5F5] px-4 py-2 rounded-full flex items-center gap-2">
+                                    <span class="text-lg">👎</span>
+                                    <span>${summary.dislikes.size || 0}</span>
+                                    ${summary.dislikes.size > 0 ? 
+                                        `<span class="text-sm text-[#DC2626] ml-1">(${Array.from(summary.dislikes).join(', ')})</span>`
+                                        : ''
+                                    }
+                                </div>
+                                <div class="stat-pill bg-[#F0F5FF] px-4 py-2 rounded-full flex items-center gap-2">
+                                    <span class="text-lg">💌</span>
+                                    <span>${summary.messages || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                visitorSummaryElement.innerHTML = summaryHtml || '<p class="text-gray-500">No visitor activity yet</p>';
+            } catch (error) {
+                console.error('Error creating visitor summary:', error);
+                visitorSummaryElement.innerHTML = '<p class="text-red-500">Error loading visitor summary</p>';
+            }
+        }
+
+        // Helper function to get visitor color class
+        function getVisitorColorClass(visitor) {
+            if (visitor?.custom_name === 'Myself') {
+                return 'bg-[#FFB7C5] px-2 py-1 rounded';
+            }
+            // Get visitor number or default to 1
+            const visitorNumber = visitor?.visitor_number || 1;
+            const colorClasses = [
+                'bg-[#FFB7C5]', // Pink (Myself)
+                'bg-[#98FB98]', // Light green
+                'bg-[#87CEEB]', // Sky blue
+                'bg-[#DDA0DD]', // Plum
+                'bg-[#F0E68C]', // Khaki
+                'bg-[#FFB6C1]', // Light pink
+                'bg-[#98FF98]', // Mint green
+                'bg-[#87CEFA]', // Light sky blue
+                'bg-[#DDB0DD]', // Light plum
+                'bg-[#F0F68C]'  // Light khaki
+            ];
+            const index = (visitorNumber - 1) % colorClasses.length;
+            return `${colorClasses[index]} px-2 py-1 rounded`;
+        }
+
+        // Name editor functionality
+        const nameEditorToggle = document.getElementById('nameEditorToggle');
+        const nameEditor = document.getElementById('nameEditor');
+        const nameEditorForm = document.getElementById('nameEditorForm');
+        const visitorSelect = document.getElementById('visitorSelect');
+
+        // Toggle name editor
+        nameEditorToggle.addEventListener('click', async () => {
+            nameEditor.classList.toggle('expanded');
+            nameEditorToggle.classList.toggle('expanded');
+            
+            // Always refresh the visitor list when opening
+            if (nameEditor.classList.contains('expanded')) {
+                await populateVisitorSelect();
+            }
+        });
+
+        // Populate visitor select
+        async function populateVisitorSelect() {
+            const loadingOption = document.createElement('option');
+            loadingOption.value = "";
+            loadingOption.textContent = "Loading visitors...";
+            loadingOption.disabled = true;
+            visitorSelect.innerHTML = '';
+            visitorSelect.appendChild(loadingOption);
+            visitorSelect.disabled = true;
+
+            try {
+                console.log('Populating visitor select...');
+                const { data: visitors, error } = await supabase
+                    .from('visitors')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                    
+                if (error) {
+                    console.error('Error fetching visitors:', error);
+                    visitorSelect.innerHTML = '<option value="">Error loading visitors</option>';
+                    return;
+                }
+                
+                if (!visitors || visitors.length === 0) {
+                    console.log('No visitors found');
+                    visitorSelect.innerHTML = '<option value="">No visitors found</option>';
+                    return;
+                }
+                
+                console.log('Found visitors:', visitors);
+                visitorSelect.innerHTML = '<option value="">Select visitor...</option>';
+                visitorSelect.disabled = false;
+                
+                visitors.forEach(visitor => {
+                    const option = document.createElement('option');
+                    option.value = visitor.id;
+                    // Show both original visitor number and custom name if it exists
+                    const visitorNumber = visitor.visitor_number || 'Unknown';
+                    const displayName = visitor.custom_name ? 
+                        `Visitor ${visitorNumber} (${visitor.custom_name})` : 
+                        `Visitor ${visitorNumber}`;
+                    option.textContent = displayName;
+                    visitorSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading visitors:', error);
+            }
+        }
+
+        // Handle name update
+        nameEditorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Check if user is authenticated
+            const { data: { user }, error: authError } = await supabase.auth.getUser();
+            if (!user) {
+                alert('You must be logged in to update names');
+                return;
+            }
+            
+            const visitorId = visitorSelect.value;
+            const newName = document.getElementById('nameInput').value.trim();
+            const submitButton = nameEditorForm.querySelector('button[type="submit"]');
+            
+            if (!visitorId || !newName) {
+                alert('Please select a visitor and enter a name');
+                return;
+            }
+            
+            try {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Saving...';
+
+                // Check for duplicate names
+                const { data: existingNames, error: checkError } = await supabase
+                    .from('visitors')
+                    .select('id, custom_name')
+                    .eq('custom_name', newName);
+
+                if (checkError) throw checkError;
+
+                if (existingNames && existingNames.length > 0 && existingNames[0].id !== visitorId) {
+                    alert(`The name "${newName}" is already in use. Please choose a different name.`);
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Save Name';
+                    return;
+                }
+
+                console.log('Updating visitor:', { visitorId, newName });
+
+                // Simple update operation
+                const { error } = await supabase
+                    .from('visitors')
+                    .update({ custom_name: newName })
+                    .eq('id', visitorId);
+
+                if (error) {
+                    console.error('Update error:', error);
+                    throw error;
+                }
+
+                console.log('Update successful');
+                alert('Name updated successfully!');
+                
+                // Refresh the page to show updated names
+                location.reload();
+            } catch (error) {
+                console.error('Error updating name:', error);
+                alert(`Failed to update name: ${error.message}`);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Save Name';
+            }
+        });
+    </script>
+</body>
+</html>
